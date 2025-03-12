@@ -3,8 +3,7 @@ from pydantic import BaseModel
 from mongoengine import *
 from bson.objectid import ObjectId
 import pandas as pd
-import datetime
-from typing import List
+import os
 
 
 connect(host='mongodb://admin:%40ccessDenied321@192.168.1.42:27017/riyazdb?authSource=admin')
@@ -90,7 +89,7 @@ async def delete_user(user_id: str):
 
 
 
-
+# improt data from excel
 @app.post("/users/upload_excel/")
 async def upload_users_from_excel(file: UploadFile):
     try:
@@ -158,3 +157,38 @@ async def get_users(srno: int = None, first_name: str = None, last_name: str = N
         return [user_to_dict(user) for user in users]
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+
+# export data to excel
+@app.get("/users/export_excel/")
+async def export_users_to_excel():
+    try:
+        users = User.objects()
+        data = {
+            "srno": [],
+            "first_name": [],
+            "last_name": [],
+            "gender": [],
+            "country": [],
+            "age": [],
+            "code": []
+        }
+        
+        for user in users:
+            data["srno"].append(user.srno)
+            data["first_name"].append(user.first_name)
+            data["last_name"].append(user.last_name)
+            data["gender"].append(user.gender)
+            data["country"].append(user.country)
+            data["age"].append(user.age)
+            data["code"].append(user.code)
+        df = pd.DataFrame(data)
+        print(df)
+        file_path = os.path.join(os.path.dirname(__file__), "users_export.xlsx")
+        df.to_excel(file_path, index=False)
+        return {"message": "Users exported successfully", "file_path": file_path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error {e}")
+    
+
